@@ -1,4 +1,4 @@
-use zero_pass_backend::SymetricMethod;
+use zero_pass_backend::{ self as zpb, encrypt };
 use std::io;
 use std::io::prelude::*;
 
@@ -7,7 +7,13 @@ fn main() {
     let unique: String = input("Digite a senha única: ").expect("Falha ao ler a entrada!");
     let variable:String = input("Digite a senha variável: ").expect("Falha ao ler a entrada!");
 
-    let method: SymetricMethod;
+    let method_args = encrypt::MethodArgs {
+        word: unique.as_str(),
+        password: variable.as_str()
+    };
+
+    let method: encrypt::Methods;
+
     match input("Usar o método padrão do sistema?[s/n]: ") {
         Err(why) => panic!("falha ao ler a entrada! {}", why),
         Ok(choice) => match choice.as_str() {
@@ -29,15 +35,15 @@ fn main() {
                 let def_met = arq["props"]["default_method"].as_str()
                     .expect("Erro: não foi ler a propriedade \"default_method\" 
                         do arquivo de configuração.");
-                method = SymetricMethod::get_methods().get(def_met)
+                method = zpb::get_methods().get(def_met)
                     .expect(
                         format!("Erro: \"{}\" não é um método de criptografia conhecido.", def_met)
                         .as_str()
-                    ).to_owned();
+                    ).to_owned()(method_args);
             },
 
         _ => {
-                let methods = SymetricMethod::get_methods();
+                let methods = zpb::get_methods();
                 let method_names: Vec<&String> = methods.keys().collect();
 
                 for i in 0..method_names.len() {
@@ -49,17 +55,17 @@ fn main() {
                     .parse::<usize>()
                     .expect("Erro: O valor inserido tem que ser um número!");
 
-                method = SymetricMethod::get_methods().get(method_names[choice])
+                method = zpb::get_methods().get(method_names[choice])
                     .expect(
                         format!("Erro: \"{}\" não é um método de criptografia conhecido.", choice)
                         .as_str()
                     )
-                    .to_owned();
+                    .to_owned()(method_args);
             }
         }
     }
 
-    let result:String = SymetricMethod::gen_pass(&method, &unique, &variable);
+    let result:String = encrypt::gen_pass(&method);
 
     println!("A senha gerada é \"{}\"", result);
 }
