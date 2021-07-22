@@ -2,14 +2,10 @@ use zero_pass_backend::SymetricMethod;
 use std::io;
 use std::io::prelude::*;
 
-use clipboard::ClipboardProvider;
-use clipboard::ClipboardContext;
-
 fn main() {
 
     let unique: String = input("Digite a senha única: ").expect("Falha ao ler a entrada!");
     let variable:String = input("Digite a senha variável: ").expect("Falha ao ler a entrada!");
-
 
     let method: SymetricMethod;
     match input("Usar o método padrão do sistema?[s/n]: ") {
@@ -22,26 +18,22 @@ fn main() {
 
                 let file_path = Path::new("/home/v/.config/zero_pass/config.toml");
     
-                let display = file_path.display();
+                let mut file = File::open(&file_path)
+                    .expect("Não foi possível abrir o arquivo de configuração!");
 
-                let mut file = match File::open(&file_path) {
-                    Err(why) => {
-                        panic!(
-                            "Não foi possível abrir o arquivo de configuração!\n{}: {}", display, why
-                            );
-                    },
-                    Ok(file) => file,
-                };
                 let mut s = String::new();
-                match file.read_to_string(&mut s) {
-                    Err(why) => panic!("Não foi possível ler {}: {}", display, why),
-                    Ok(_) => {}
-                }
+                file.read_to_string(&mut s).expect("Não foi possível ler");
 
-                let arq = s.parse::<Value>().unwrap();
+                let arq = s.parse::<Value>().expect("Erro ao ler o arquivo no formato TOML.");
 
-                let def_met = arq["props"]["default_method"].as_str();
-                method = SymetricMethod::get_methods().get(def_met.unwrap()).unwrap().to_owned();
+                let def_met = arq["props"]["default_method"].as_str()
+                    .expect("Erro: não foi ler a propriedade \"default_method\" 
+                        do arquivo de configuração.");
+                method = SymetricMethod::get_methods().get(def_met)
+                    .expect(
+                        format!("Erro: \"{}\" não é um método de criptografia conhecido.", def_met)
+                        .as_str()
+                    ).to_owned();
             },
 
         _ => {
@@ -57,16 +49,19 @@ fn main() {
                     .parse::<usize>()
                     .expect("Erro: O valor inserido tem que ser um número!");
 
-                method = SymetricMethod::get_methods().get(method_names[choice]).unwrap().to_owned();
+                method = SymetricMethod::get_methods().get(method_names[choice])
+                    .expect(
+                        format!("Erro: \"{}\" não é um método de criptografia conhecido.", choice)
+                        .as_str()
+                    )
+                    .to_owned();
             }
         }
     }
 
     let result:String = SymetricMethod::gen_pass(&method, &unique, &variable);
 
-    let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
-    ctx.set_contents(result.to_owned()).unwrap();
-    println!("A senha \"{}\" foi copiada para a área de transferencia.", result);
+    println!("A senha gerada é \"{}\"", result);
 }
 
 
