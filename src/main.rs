@@ -1,4 +1,4 @@
-use zero_pass_backend::{ self as zpb, encrypt };
+use zero_pass_backend::{ self as zpb, encrypt, CipherError };
 use std::io;
 use std::io::prelude::*;
 
@@ -65,7 +65,17 @@ fn main() {
         }
     }
 
-    let result:String = encrypt::gen_pass(&method);
+    let result:String;
+
+    match encrypt::gen_pass(&method) {
+        Ok(s) => {result = s;},
+        Err(e) => {
+            match e {
+                CipherError::InvalidCharacterError =>
+                panic!("{:?}: O caractere inserido é inválido.", e),
+            }
+        }
+    }
 
     println!("A senha gerada é \"{}\"", result);
 }
