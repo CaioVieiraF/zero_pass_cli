@@ -1,5 +1,5 @@
 [package]
-name = "zero_pass-cli"
+name = "zero_pass_cli"
 version = "0.1.0"
 edition = "2018"
 
