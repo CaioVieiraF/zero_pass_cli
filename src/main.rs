@@ -1,10 +1,24 @@
+pub mod languages;
+
+use languages::{Languages, Messages};
 use std::io;
 use std::io::prelude::*;
+use toml::Value;
 use zero_pass_backend::{self as zpb, encrypt, CipherError};
 
 fn main() {
-    let unique: String = input("Digite a senha única: ").expect("Falha ao ler a entrada!");
-    let variable: String = input("Digite a senha variável: ").expect("Falha ao ler a entrada!");
+    let config_file: Value = load_file();
+    let lang: Languages = config_file["props"]["lang"]
+        .as_str()
+        .unwrap()
+        .parse::<Languages>()
+        .unwrap();
+    let mess: Messages = load_lang(lang);
+
+    let unique: String =
+        input(format!("{}: ", mess.ask_unique_pass).as_str()).expect(mess.error_input);
+    let variable: String =
+        input(format!("{}: ", mess.ask_variable_pass).as_str()).expect(mess.error_input);
 
     let method_args = encrypt::MethodArgs {
         word: unique.as_str(),
@@ -13,12 +27,15 @@ fn main() {
 
     let method: encrypt::Methods;
 
-    match input("Usar o método padrão do sistema?[s/n]: ") {
-        Err(why) => {println!("falha ao ler a entrada! {}", why); return},
+    match input(mess.ask_get_sys_default_method) {
+        Err(why) => {
+            println!("{}! {}", mess.error_input, why);
+            return;
+        }
         Ok(choice) => {
             method = match choice.as_str() {
-                "s" | "S" => use_config_file(method_args),
-                _ => chose_from_menu(method_args),
+                "s" | "S" | "y" | "Y" => use_config_file(&mess, method_args, config_file),
+                _ => chose_from_menu(&mess, method_args),
             }
         }
     }
@@ -31,44 +48,44 @@ fn main() {
         }
         Err(e) => match e {
             CipherError::InvalidCharacterError => {
-                println!("{:?}: O caractere inserido é inválido.", e);
-                return
+                println!("{:?}: {}.", e, mess.error_invalid_character);
+                return;
             }
         },
     }
 
-    println!("A senha gerada é \"{}\"", result);
+    println!("{} \"{}\"", mess.final_result, result);
 }
 
-fn chose_from_menu(method_args: encrypt::MethodArgs) -> encrypt::Methods {
+fn chose_from_menu<'a>(
+    mess: &Messages,
+    method_args: encrypt::MethodArgs<'a>,
+) -> encrypt::Methods<'a> {
     let methods = zpb::get_methods();
     let method_names: Vec<&String> = methods.keys().collect();
 
-    for (i, index) in method_names.iter().enumerate() {
+    for (index, i) in method_names.iter().enumerate() {
         println!("[{}] - {}", index, i);
     }
 
-    let choice = input("Escolha um método de criptografia: ")
-        .expect("Falha ao ler a entrada!")
+    let choice = input(format!("{}: ", mess.ask_menu_method).as_str())
+        .expect(mess.error_input)
         .parse::<usize>()
-        .expect("Erro: O valor inserido tem que ser um número!");
-
+        .unwrap_or_else(|_| panic!("Error: {}", mess.error_parse));
 
     zpb::get_methods()
         .get(method_names[choice])
-        .unwrap_or_else(|| {
-            panic!(
-                "Erro: \"{}\" não é um método de criptografia conhecido.",
-                choice
-            );
-        })
+        .unwrap_or_else(|| panic!("Erro: \"{}\" {}", choice, mess.error_unknown_method))
         .to_owned()(method_args)
 }
 
-fn use_config_file(method_args: encrypt::MethodArgs) -> encrypt::Methods {
+fn load_lang<'a>(lang: Languages) -> Messages<'a> {
+    Messages::new(lang)
+}
+
+fn load_file() -> Value {
     use std::fs::File;
     use std::path::Path;
-    use toml::Value;
 
     let file_path = Path::new("/home/v/.config/zero_pass/config.toml");
 
@@ -78,23 +95,22 @@ fn use_config_file(method_args: encrypt::MethodArgs) -> encrypt::Methods {
     let mut s = String::new();
     file.read_to_string(&mut s).expect("Não foi possível ler");
 
-    let arq = s
-        .parse::<Value>()
-        .expect("Erro ao ler o arquivo no formato TOML.");
+    s.parse::<Value>()
+        .expect("Erro ao ler o arquivo no formato TOML.")
+}
 
-    let def_met = arq["props"]["default_method"].as_str().expect(
-        "Erro: não foi ler a propriedade \"default_method\" 
-                        do arquivo de configuração.",
-    );
+fn use_config_file<'a>(
+    mess: &Messages,
+    method_args: encrypt::MethodArgs<'a>,
+    arq: Value,
+) -> encrypt::Methods<'a> {
+    let def_met = arq["props"]["default_method"]
+        .as_str()
+        .unwrap_or_else(|| panic!("Error: {}", mess.error_file_prop));
 
     zpb::get_methods()
         .get(def_met)
-        .unwrap_or_else(|| {
-            panic!(
-                "Erro: \"{}\" não é um método de criptografia conhecido.",
-                def_met
-            );
-        })
+        .unwrap_or_else(|| panic!("Erro: \"{}\" {}", def_met, mess.error_unknown_method))
         .to_owned()(method_args)
 }
 
