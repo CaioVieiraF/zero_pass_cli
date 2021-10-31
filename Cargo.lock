@@ -13,9 +13,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.126"
+version = "1.0.130"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
+checksum = "f12d06de37cf59146fbdecab66aa99f9fe4f78722e3607577a5375d66bd0c913"
 
 [[package]]
 name = "toml"
@@ -50,9 +50,9 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "zero_pass_backend"
-version = "0.0.6"
+version = "0.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ee91988584b57da9e071869d8c0b762c66e65e7eba4e9e44c108031c88c06f9"
+checksum = "2bf861082d28714ae76237fcf6d6e9a6617b3dea7aa11b87ef4f16c3dd898da6"
 
 [[package]]
 name = "zero_pass_cli"

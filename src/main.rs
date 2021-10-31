@@ -40,9 +40,26 @@ fn main() {
         }
     }
 
+    let repeat: u8;
+
+    match input(mess.ask_repeat_method_times) {
+        Err(why) => {
+            println!("{}! {}", mess.error_input, why);
+            return;
+        }
+        Ok(choice) => {
+            repeat = match choice.len() {
+                0 => 1,
+                _ => choice
+                    .parse::<u8>()
+                    .unwrap_or_else(|_| panic!("{}", mess.error_number_parse)),
+            }
+        }
+    }
+
     let result: String;
 
-    match encrypt::gen_pass(&method) {
+    match encrypt::gen_pass(&method, Some(repeat)) {
         Ok(s) => {
             result = s;
         }
@@ -51,6 +68,7 @@ fn main() {
                 println!("{:?}: {}.", e, mess.error_invalid_character);
                 return;
             }
+            _ => return,
         },
     }
 
