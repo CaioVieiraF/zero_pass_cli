@@ -7,12 +7,24 @@ use toml::Value;
 use zero_pass_backend::{self as zpb, encrypt, CipherError};
 
 fn main() {
-    let config_file: Value = load_file();
-    let lang: Languages = config_file["props"]["lang"]
-        .as_str()
-        .unwrap()
-        .parse::<Languages>()
-        .unwrap();
+    let mut config_file: Option<Value> = None;
+    let lang: Languages;
+
+    match load_file() {
+        Ok(f) => {
+            config_file = Some(f);
+            lang = config_file.clone().unwrap()["props"]["lang"]
+                .as_str()
+                .unwrap()
+                .parse::<Languages>()
+                .unwrap();
+        }
+        Err(_) => {
+            println!("Could not load configuration file, fallbacking to en_us...");
+            lang = Languages::EnUs;
+        }
+    }
+
     let mess: Messages = load_lang(lang);
 
     let unique: String =
@@ -27,17 +39,23 @@ fn main() {
 
     let method: encrypt::Methods;
 
-    match input(mess.ask_get_sys_default_method) {
-        Err(why) => {
-            println!("{}! {}", mess.error_input, why);
-            return;
-        }
-        Ok(choice) => {
-            method = match choice.as_str() {
-                "s" | "S" | "y" | "Y" => use_config_file(&mess, method_args, config_file),
-                _ => chose_from_menu(&mess, method_args),
+    if config_file != None {
+        match input(mess.ask_get_sys_default_method) {
+            Err(why) => {
+                println!("{}! {}", mess.error_input, why);
+                return;
+            }
+            Ok(choice) => {
+                method = match choice.as_str() {
+                    "s" | "S" | "y" | "Y" => {
+                        use_config_file(&mess, method_args, config_file.unwrap())
+                    }
+                    _ => chose_from_menu(&mess, method_args),
+                }
             }
         }
+    } else {
+        method = chose_from_menu(&mess, method_args);
     }
 
     let repeat: u8;
@@ -101,20 +119,19 @@ fn load_lang<'a>(lang: Languages) -> Messages<'a> {
     Messages::new(lang)
 }
 
-fn load_file() -> Value {
+fn load_file() -> Result<Value, io::Error> {
     use std::fs::File;
     use std::path::Path;
 
     let file_path = Path::new("/home/v/.config/zero_pass/config.toml");
 
-    let mut file =
-        File::open(&file_path).expect("Não foi possível abrir o arquivo de configuração!");
+    let mut file = File::open(&file_path)?;
 
     let mut s = String::new();
     file.read_to_string(&mut s).expect("Não foi possível ler");
 
-    s.parse::<Value>()
-        .expect("Erro ao ler o arquivo no formato TOML.")
+    Ok(s.parse::<Value>()
+        .expect("Erro ao ler o arquivo no formato TOML."))
 }
 
 fn use_config_file<'a>(
