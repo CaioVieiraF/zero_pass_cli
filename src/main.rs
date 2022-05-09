@@ -132,13 +132,20 @@ fn load_file(mess: Messages) -> Option<Value> {
                 panic!("{}! {}", mess.error_input, why);
             }
             Ok(choice) => match choice.as_str() {
-                "y" | "Y" | "s" | "S" => Some(File::create(&file_path).expect("")),
+                "y" | "Y" | "s" | "S" => {
+                    let mut fl = File::create(&file_path).expect("");
+                    fl.write(b"[props]\ndefault_method = 'Base64'\nlang = 'EnUs'")
+                        .expect("Could not write to file!");
+
+                    drop(fl);
+                    Some(File::open(&file_path).expect("Could not open file. "))
+                }
                 _ => None,
             },
         },
     };
 
-    let mut file = match file {
+    let mut file: File = match file {
         Some(f) => f,
         None => return None,
     };
