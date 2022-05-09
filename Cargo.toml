@@ -8,4 +8,4 @@ edition = "2018"
 [dependencies]
 zero_pass_backend = "0.0.7"
 toml = "0.5.8"
-home = "0.5.3"
+dirs = "4.0.0"

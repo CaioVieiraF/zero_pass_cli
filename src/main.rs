@@ -121,9 +121,14 @@ fn load_lang<'a>(lang: Languages) -> Messages<'a> {
 
 fn load_file(mess: Messages) -> Option<Value> {
     use std::fs::File;
-    use std::path::Path;
 
-    let file_path = Path::new("/home/v/.config/zero_pass/config.toml");
+    let mut home = match dirs::home_dir() {
+        Some(h) => h,
+        None => return None,
+    };
+
+    home.push(".config/zero_pass/config.toml");
+    let file_path = home;
 
     let file: Option<File> = match File::open(&file_path) {
         Ok(f) => Some(f),
