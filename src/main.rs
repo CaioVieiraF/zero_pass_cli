@@ -10,8 +10,8 @@ fn main() {
     let mut config_file: Option<Value> = None;
     let lang: Languages;
 
-    match load_file() {
-        Ok(f) => {
+    match load_file(Messages::new(Languages::EnUs)) {
+        Some(f) => {
             config_file = Some(f);
             lang = config_file.clone().unwrap()["props"]["lang"]
                 .as_str()
@@ -19,7 +19,7 @@ fn main() {
                 .parse::<Languages>()
                 .unwrap();
         }
-        Err(_) => {
+        None => {
             println!("Could not load configuration file, fallbacking to en_us...");
             lang = Languages::EnUs;
         }
@@ -119,19 +119,37 @@ fn load_lang<'a>(lang: Languages) -> Messages<'a> {
     Messages::new(lang)
 }
 
-fn load_file() -> Result<Value, io::Error> {
+fn load_file(mess: Messages) -> Option<Value> {
     use std::fs::File;
     use std::path::Path;
 
     let file_path = Path::new("/home/v/.config/zero_pass/config.toml");
 
-    let mut file = File::open(&file_path)?;
+    let file: Option<File> = match File::open(&file_path) {
+        Ok(f) => Some(f),
+        Err(_) => match input(mess.ask_create_file) {
+            Err(why) => {
+                panic!("{}! {}", mess.error_input, why);
+            }
+            Ok(choice) => match choice.as_str() {
+                "y" | "Y" | "s" | "S" => Some(File::create(&file_path).expect("")),
+                _ => None,
+            },
+        },
+    };
+
+    let mut file = match file {
+        Some(f) => f,
+        None => return None,
+    };
 
     let mut s = String::new();
     file.read_to_string(&mut s).expect("Não foi possível ler");
 
-    Ok(s.parse::<Value>()
-        .expect("Erro ao ler o arquivo no formato TOML."))
+    Some(
+        s.parse::<Value>()
+            .expect("Erro ao ler o arquivo no formato TOML."),
+    )
 }
 
 fn use_config_file<'a>(
