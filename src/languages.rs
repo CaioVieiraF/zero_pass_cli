@@ -10,26 +10,26 @@ pub enum Errors {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Messages<'a> {
-    pub ask_unique_pass: &'a str,
-    pub ask_variable_pass: &'a str,
-    pub ask_get_sys_default_method: &'a str,
-    pub ask_menu_method: &'a str,
-    pub ask_repeat_method_times: &'a str,
-    pub ask_create_file: &'a str,
-    pub error_parse: &'a str,
-    pub error_unknown_method: &'a str,
-    pub error_number_parse: &'a str,
-    pub error_file_open: &'a str,
-    pub error_file_parse: &'a str,
-    pub error_file_read: &'a str,
-    pub error_file_prop: &'a str,
-    pub error_input: &'a str,
-    pub error_invalid_character: &'a str,
-    pub final_result: &'a str,
+pub struct Messages {
+    pub ask_unique_pass: &'static str,
+    pub ask_variable_pass: &'static str,
+    pub ask_get_sys_default_method: &'static str,
+    pub ask_menu_method: &'static str,
+    pub ask_repeat_method_times: &'static str,
+    pub ask_create_file: &'static str,
+    pub error_parse: &'static str,
+    pub error_unknown_method: &'static str,
+    pub error_number_parse: &'static str,
+    pub error_file_open: &'static str,
+    pub error_file_parse: &'static str,
+    pub error_file_read: &'static str,
+    pub error_file_prop: &'static str,
+    pub error_input: &'static str,
+    pub error_invalid_character: &'static str,
+    pub final_result: &'static str,
 }
 
-impl<'a> Messages<'a> {
+impl Messages {
     pub fn new(lang: Languages) -> Self {
         match lang {
             Languages::PtBr => Messages {

@@ -27,10 +27,8 @@ fn main() {
 
     let mess: Messages = load_lang(lang);
 
-    let unique: String =
-        input(format!("{}: ", mess.ask_unique_pass).as_str()).expect(mess.error_input);
-    let variable: String =
-        input(format!("{}: ", mess.ask_variable_pass).as_str()).expect(mess.error_input);
+    let unique: String = input(format!("{}: ", mess.ask_unique_pass)).expect(mess.error_input);
+    let variable: String = input(format!("{}: ", mess.ask_variable_pass)).expect(mess.error_input);
 
     let password_builder = PasswordBuilder::new()
         .unique(unique)
@@ -40,7 +38,7 @@ fn main() {
 
     match input(mess.ask_repeat_method_times) {
         Err(why) => {
-            println!("{}! {}", mess.error_input, why);
+            println!("{}! {why}", mess.error_input);
             return;
         }
         Ok(choice) => {
@@ -58,7 +56,7 @@ fn main() {
     let password_builder = if config_file != None {
         let choice = match input(mess.ask_get_sys_default_method) {
             Err(why) => {
-                println!("{}! {}", mess.error_input, why);
+                println!("{}! {why}", mess.error_input);
                 return;
             }
             Ok(c) => c,
@@ -74,7 +72,7 @@ fn main() {
         password_gen.unwrap_or_else(|e| {
             match e {
                 CipherError::InvalidCharacterError => {
-                    panic!("{:?}: {}.", e, mess.error_invalid_character);
+                    panic!("{e:?}: {}.", mess.error_invalid_character);
                 },
                 _ => panic!("Error"),
             }
@@ -84,7 +82,7 @@ fn main() {
         chose_from_menu(&mess, password_builder).unwrap_or_else(|e| {
             match e {
                 CipherError::InvalidCharacterError => {
-                    panic!("{:?}: {}.", e, mess.error_invalid_character);
+                    panic!("{e:?}: {}.", mess.error_invalid_character);
                 },
                 _ => panic!("Error"),
             }
@@ -93,7 +91,7 @@ fn main() {
 
     let result: String = password_builder.build();
 
-    println!("{} \"{}\"", mess.final_result, result);
+    println!("{} \"{result}\"", mess.final_result);
 }
 
 fn chose_from_menu(
@@ -103,10 +101,10 @@ fn chose_from_menu(
     let method_names = zpb::Methods::get_methods();
 
     for (index, i) in method_names.iter().enumerate() {
-        println!("[{}] - {}", index, i);
+        println!("[{index}] - {i}");
     }
 
-    let choice = input(format!("{}: ", mess.ask_menu_method).as_str()).expect(mess.error_input);
+    let choice = input(format!("{}: ", mess.ask_menu_method)).expect(mess.error_input);
     let choice = choice.parse::<usize>().unwrap_or_else(|_| panic!("{}", mess.error_number_parse));
 
     let method = zpb::Methods::get_method(method_names[choice]).unwrap_or_else(|_| panic!("Erro: \"{choice}\" {}", mess.error_unknown_method));
@@ -114,7 +112,7 @@ fn chose_from_menu(
     password_builder.method_ptr(method)
 }
 
-fn load_lang<'a>(lang: Languages) -> Messages<'a> {
+fn load_lang(lang: Languages) -> Messages {
     Messages::new(lang)
 }
 
@@ -133,7 +131,7 @@ fn load_file(mess: Messages) -> Option<Value> {
         Ok(f) => Some(f),
         Err(_) => match input(mess.ask_create_file) {
             Err(why) => {
-                panic!("{}! {}", mess.error_input, why);
+                panic!("{}! {why}", mess.error_input);
             }
             Ok(choice) => match choice.as_str() {
                 "y" | "Y" | "s" | "S" => {
@@ -176,8 +174,8 @@ fn use_config_file(
     password_builder.method_ptr(method)
 }
 
-fn input(message: &str) -> io::Result<String> {
-    print!("{}", message);
+fn input(message: impl Into<String>) -> io::Result<String> {
+    print!("{}", message.into());
 
     io::stdout().flush()?;
 
