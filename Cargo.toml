@@ -1,11 +1,11 @@
 [package]
 name = "zero_pass_cli"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zero_pass_backend = "0.0.7"
+zero_pass_backend = "0.2.3"
 toml = "0.5.8"
 dirs = "4.0.0"

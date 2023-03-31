@@ -4,7 +4,7 @@ use languages::{Languages, Messages};
 use std::io;
 use std::io::prelude::*;
 use toml::Value;
-use zero_pass_backend::{self as zpb, encrypt, CipherError};
+use zero_pass_backend::{ self as zpb, encrypt::{ PasswordBuilder, Unique, Variable }, CipherError };
 
 fn main() {
     let mut config_file: Option<Value> = None;
@@ -32,32 +32,10 @@ fn main() {
     let variable: String =
         input(format!("{}: ", mess.ask_variable_pass).as_str()).expect(mess.error_input);
 
-    let method_args = encrypt::MethodArgs {
-        word: unique.as_str(),
-        password: variable.as_str(),
-    };
-
-    let method: encrypt::Methods;
-
-    if config_file != None {
-        match input(mess.ask_get_sys_default_method) {
-            Err(why) => {
-                println!("{}! {}", mess.error_input, why);
-                return;
-            }
-            Ok(choice) => {
-                method = match choice.as_str() {
-                    "s" | "S" | "y" | "Y" => {
-                        use_config_file(&mess, method_args, config_file.unwrap())
-                    }
-                    _ => chose_from_menu(&mess, method_args),
-                }
-            }
-        }
-    } else {
-        method = chose_from_menu(&mess, method_args);
-    }
-
+    let password_builder = PasswordBuilder::new()
+        .unique(unique)
+        .variable(variable.as_str());
+    
     let repeat: u8;
 
     match input(mess.ask_repeat_method_times) {
@@ -75,44 +53,65 @@ fn main() {
         }
     }
 
-    let result: String;
+    let password_builder = password_builder.repeat(repeat);
 
-    match encrypt::gen_pass(&method, Some(repeat)) {
-        Ok(s) => {
-            result = s;
-        }
-        Err(e) => match e {
-            CipherError::InvalidCharacterError => {
-                println!("{:?}: {}.", e, mess.error_invalid_character);
+    let password_builder = if config_file != None {
+        let choice = match input(mess.ask_get_sys_default_method) {
+            Err(why) => {
+                println!("{}! {}", mess.error_input, why);
                 return;
             }
-            _ => return,
-        },
-    }
+            Ok(c) => c,
+        };
+
+        let password_gen = match choice.as_str() {
+            "s" | "S" | "y" | "Y" => {
+                use_config_file(&mess, password_builder, config_file.unwrap())
+            }
+            _ => chose_from_menu(&mess, password_builder),
+        };
+
+        password_gen.unwrap_or_else(|e| {
+            match e {
+                CipherError::InvalidCharacterError => {
+                    panic!("{:?}: {}.", e, mess.error_invalid_character);
+                },
+                _ => panic!("Error"),
+            }
+        })
+
+    } else {
+        chose_from_menu(&mess, password_builder).unwrap_or_else(|e| {
+            match e {
+                CipherError::InvalidCharacterError => {
+                    panic!("{:?}: {}.", e, mess.error_invalid_character);
+                },
+                _ => panic!("Error"),
+            }
+        })
+    };
+
+    let result: String = password_builder.build();
 
     println!("{} \"{}\"", mess.final_result, result);
 }
 
-fn chose_from_menu<'a>(
+fn chose_from_menu(
     mess: &Messages,
-    method_args: encrypt::MethodArgs<'a>,
-) -> encrypt::Methods<'a> {
-    let methods = zpb::get_methods();
-    let method_names: Vec<&String> = methods.keys().collect();
+    password_builder: PasswordBuilder<Unique, Variable>
+) -> Result<PasswordBuilder<Unique, Variable>, CipherError> {
+    let method_names = zpb::Methods::get_methods();
 
     for (index, i) in method_names.iter().enumerate() {
         println!("[{}] - {}", index, i);
     }
 
-    let choice = input(format!("{}: ", mess.ask_menu_method).as_str())
-        .expect(mess.error_input)
-        .parse::<usize>()
-        .unwrap_or_else(|_| panic!("Error: {}", mess.error_parse));
+    let choice = input(format!("{}: ", mess.ask_menu_method).as_str()).expect(mess.error_input);
+    let choice = choice.parse::<usize>().unwrap_or_else(|_| panic!("{}", mess.error_number_parse));
 
-    zpb::get_methods()
-        .get(method_names[choice])
-        .unwrap_or_else(|| panic!("Erro: \"{}\" {}", choice, mess.error_unknown_method))
-        .to_owned()(method_args)
+    let method = zpb::Methods::get_method(method_names[choice]).unwrap_or_else(|_| panic!("Erro: \"{choice}\" {}", mess.error_unknown_method));
+
+    password_builder.method_ptr(method)
 }
 
 fn load_lang<'a>(lang: Languages) -> Messages<'a> {
@@ -164,19 +163,17 @@ fn load_file(mess: Messages) -> Option<Value> {
     )
 }
 
-fn use_config_file<'a>(
+fn use_config_file(
     mess: &Messages,
-    method_args: encrypt::MethodArgs<'a>,
+    password_builder: PasswordBuilder<Unique, Variable>,
     arq: Value,
-) -> encrypt::Methods<'a> {
+) -> Result<PasswordBuilder<Unique, Variable>, CipherError> {
     let def_met = arq["props"]["default_method"]
         .as_str()
         .unwrap_or_else(|| panic!("Error: {}", mess.error_file_prop));
 
-    zpb::get_methods()
-        .get(def_met)
-        .unwrap_or_else(|| panic!("Erro: \"{}\" {}", def_met, mess.error_unknown_method))
-        .to_owned()(method_args)
+    let method = zpb::Methods::get_method(def_met).unwrap_or_else(|_| panic!("Erro: \"{def_met}\" {}", mess.error_unknown_method));
+    password_builder.method_ptr(method)
 }
 
 fn input(message: &str) -> io::Result<String> {
