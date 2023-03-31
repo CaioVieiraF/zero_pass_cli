@@ -3,6 +3,7 @@ pub mod languages;
 use languages::{Languages, Messages};
 use std::io;
 use std::io::prelude::*;
+use std::env;
 use toml::Value;
 use zero_pass_backend::{ self as zpb, encrypt::{ PasswordBuilder, Unique, Variable }, CipherError };
 
@@ -25,31 +26,36 @@ fn main() {
         }
     }
 
-    let mess: Messages = load_lang(lang);
+    let mess = Messages::new(lang);
+    let cli_args: Vec<String> = env::args().collect();
 
-    let unique: String = input(format!("{}: ", mess.ask_unique_pass)).expect(mess.error_input);
-    let variable: String = input(format!("{}: ", mess.ask_variable_pass)).expect(mess.error_input);
+    let unique: String = match cli_args.iter().position(|u| u == "-u") {
+        Some(w) => cli_args[w+1].clone(),
+        None => input(format!("{}: ", mess.ask_unique_pass)).expect(mess.error_input)
+    };
+    let variable: String = match cli_args.iter().position(|u| u == "-v") {
+        Some(w) => cli_args[w+1].clone(),
+        None => input(format!("{}: ", mess.ask_variable_pass)).expect(mess.error_input),
+    };
 
     let password_builder = PasswordBuilder::new()
         .unique(unique)
         .variable(variable.as_str());
     
-    let repeat: u8;
+    let repeat_str = match cli_args.iter().position(|u| u == "-r") {
+        Some(w) => cli_args[w+1].clone(),
+        None => match cli_args.iter().position(|u| u == "-R") {
+            Some(_) => 0.to_string(),
+            None => input(mess.ask_repeat_method_times).expect(mess.error_input),
+        },
+    };
 
-    match input(mess.ask_repeat_method_times) {
-        Err(why) => {
-            println!("{}! {why}", mess.error_input);
-            return;
-        }
-        Ok(choice) => {
-            repeat = match choice.len() {
-                0 => 1,
-                _ => choice
-                    .parse::<u8>()
-                    .unwrap_or_else(|_| panic!("{}", mess.error_number_parse)),
-            }
-        }
-    }
+    let repeat = match repeat_str.len() {
+        0 => 1,
+        _ => repeat_str
+            .parse::<u8>()
+            .unwrap_or_else(|_| panic!("{}", mess.error_number_parse)),
+    };
 
     let password_builder = password_builder.repeat(repeat);
 
@@ -110,10 +116,6 @@ fn chose_from_menu(
     let method = zpb::Methods::get_method(method_names[choice]).unwrap_or_else(|_| panic!("Erro: \"{choice}\" {}", mess.error_unknown_method));
 
     password_builder.method_ptr(method)
-}
-
-fn load_lang(lang: Languages) -> Messages {
-    Messages::new(lang)
 }
 
 fn load_file(mess: Messages) -> Option<Value> {
