@@ -4,6 +4,10 @@ pub enum Languages {
     EnUs,
 }
 
+impl Default for Languages {
+    fn default() -> Self { Languages::EnUs }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Errors {
     ParseLangError,
