@@ -1,39 +1,33 @@
-#[derive(Debug, Clone, PartialEq)]
+use crate::prelude::*;
+
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Languages {
     PtBr,
+    #[default]
     EnUs,
 }
 
-impl Default for Languages {
-    fn default() -> Self { Languages::EnUs }
-}
-
 #[derive(Debug, Clone, PartialEq)]
-pub enum Errors {
-    ParseLangError,
+pub struct Messages<'a> {
+    pub ask_unique_pass: &'a str,
+    pub ask_variable_pass: &'a str,
+    pub ask_get_sys_default_method: &'a str,
+    pub ask_menu_method: &'a str,
+    pub ask_repeat_method_times: &'a str,
+    pub ask_create_file: &'a str,
+    pub error_parse: &'a str,
+    pub error_unknown_method: &'a str,
+    pub error_number_parse: &'a str,
+    pub error_file_open: &'a str,
+    pub error_file_parse: &'a str,
+    pub error_file_read: &'a str,
+    pub error_file_prop: &'a str,
+    pub error_input: &'a str,
+    pub error_invalid_character: &'a str,
+    pub final_result: &'a str,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Messages {
-    pub ask_unique_pass: &'static str,
-    pub ask_variable_pass: &'static str,
-    pub ask_get_sys_default_method: &'static str,
-    pub ask_menu_method: &'static str,
-    pub ask_repeat_method_times: &'static str,
-    pub ask_create_file: &'static str,
-    pub error_parse: &'static str,
-    pub error_unknown_method: &'static str,
-    pub error_number_parse: &'static str,
-    pub error_file_open: &'static str,
-    pub error_file_parse: &'static str,
-    pub error_file_read: &'static str,
-    pub error_file_prop: &'static str,
-    pub error_input: &'static str,
-    pub error_invalid_character: &'static str,
-    pub final_result: &'static str,
-}
-
-impl Messages {
+impl<'a> Messages<'a> {
     pub fn new(lang: Languages) -> Self {
         match lang {
             Languages::PtBr => Messages {
@@ -51,7 +45,7 @@ impl Messages {
                 error_file_open: "Não foi possível abrir o arquivo de configuração",
                 error_file_read: "Não foi possível ler",
                 error_file_parse: "Erro ao ler o arquivo no formato TOML",
-                error_file_prop: "não foi ler a propriedade \"default_method\" 
+                error_file_prop: "não foi ler a propriedade \"default_method\"
                         do arquivo de configuração",
                 final_result: "A senha gerada é ",
             },
@@ -78,9 +72,9 @@ impl Messages {
 }
 
 impl std::str::FromStr for Languages {
-    type Err = Errors;
+    type Err = Error;
 
-    fn from_str(lang: &str) -> Result<Self, Self::Err> {
+    fn from_str(lang: &str) -> Result<Self> {
         match lang {
             "pt_br" => Ok(Languages::PtBr),
             "en_us" => Ok(Languages::EnUs),
