@@ -5,6 +5,7 @@ pub mod prelude;
 use std::str::FromStr;
 
 use clap::Parser;
+use copypasta::{ClipboardContext, ClipboardProvider};
 use inquire::{Password, Select, Text};
 use languages::Messages;
 use zero_pass_backend::{self as zpb, encrypt::PasswordBuilder};
@@ -25,6 +26,10 @@ struct Args {
     /// Method to use for encryption
     #[arg(short, long)]
     method: Option<Methods>,
+
+    /// Choose to show the result password or copy do clipboard
+    #[arg(short, long)]
+    show_result: bool,
 }
 
 fn main() {
@@ -67,5 +72,11 @@ fn main() {
     // Get the generated password and then show to the user.
     let result: String = password_builder.build();
 
-    println!("{} \"{result}\"", mess.final_result);
+    if cli_args.show_result {
+        println!("{} \"{result}\"", mess.final_result_show);
+    } else {
+        let mut clip_ctx = ClipboardContext::new().unwrap();
+        clip_ctx.set_contents(result).unwrap();
+        println!("{}", mess.final_result);
+    }
 }

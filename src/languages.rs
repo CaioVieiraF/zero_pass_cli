@@ -36,6 +36,7 @@ pub struct Messages<'a> {
     pub error_input: &'a str,
     pub error_invalid_character: &'a str,
     pub final_result: &'a str,
+    pub final_result_show: &'a str,
 }
 
 impl<'a> Default for Messages<'a> {
@@ -68,7 +69,8 @@ impl<'a> Messages<'a> {
                 error_file_parse: "Erro ao ler o arquivo no formato TOML",
                 error_file_prop: "não foi ler a propriedade \"default_method\"
                         do arquivo de configuração",
-                final_result: "A senha gerada é ",
+                final_result: "Senha copiada para a área de transferência.",
+                final_result_show: "A senha gerada é ",
             },
             Languages::EnUs => Messages {
                 ask_menu_method: "Choose a cryptography method",
@@ -86,7 +88,8 @@ impl<'a> Messages<'a> {
                 error_file_read: "Unable to read the file",
                 error_file_parse: "Error while parsing TOML file",
                 error_file_prop: "Unable to read prop \"default_method\" from config file",
-                final_result: "The generated password is",
+                final_result: "The password is on the clipboard.",
+                final_result_show: "The generated password is ",
             },
         }
     }
