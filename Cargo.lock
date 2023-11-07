@@ -585,7 +585,9 @@ checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
 
 [[package]]
 name = "zero_pass_backend"
-version = "0.2.4"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3396574602acfd3754947e9b548bf97dded2b5e5d4c9a2d4b186d794d4ce620c"
 dependencies = [
  "base64",
  "serde_json",
@@ -595,7 +597,9 @@ dependencies = [
 
 [[package]]
 name = "zero_pass_backend_derive"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5b49806974fe2a027c2ec3d992db875b770910c75302212c6c95451b00b99ad"
 dependencies = [
  "quote",
  "syn 1.0.109",
