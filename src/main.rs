@@ -2,15 +2,14 @@ pub mod error;
 pub mod languages;
 pub mod prelude;
 
+use std::str::FromStr;
+
 use clap::Parser;
+use inquire::{Confirm, Password, Select, Text};
 use languages::{Languages, Messages};
-use prelude::*;
-use std::io;
 use toml::Value;
-use zero_pass_backend::{
-    self as zpb,
-    encrypt::{PasswordBuilder, Unique, Variable},
-};
+use zero_pass_backend::{self as zpb, encrypt::PasswordBuilder};
+use zpb::Methods;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -26,7 +25,7 @@ struct Args {
     repeat: u8,
     /// Method to use for encryption
     #[arg(short, long)]
-    method: String,
+    method: Option<Methods>,
 }
 
 fn main() {
@@ -61,13 +60,13 @@ fn main() {
     // Get the unique pass either from command line, if specified, or from user input.
     let unique = match cli_args.unique {
         Some(u) => u,
-        None => input(format!("{}: ", mess.ask_unique_pass)).expect(mess.error_input),
+        None => Password::new(mess.ask_unique_pass).prompt().expect(""),
     };
 
     // Get the variable pass either from command line, if specified, or from user input.
     let variable = match cli_args.variable {
         Some(v) => v,
-        None => input(format!("{}: ", mess.ask_variable_pass)).expect(mess.error_input),
+        None => Text::new(mess.ask_variable_pass).prompt().expect(""),
     };
 
     // Start building the password with the PasswordBuilder. This must initialize with unique and
@@ -78,10 +77,25 @@ fn main() {
 
     password_builder = password_builder.repeat(cli_args.repeat);
 
-    // Get method from command line argument
-    if let Ok(s) = zpb::Methods::get_method(cli_args.method) {
-        password_builder = password_builder.method_ptr(s).unwrap();
-    }
+    // Get method from command line argument or prompt
+    let method = match cli_args.method {
+        Some(m) => m.to_method(),
+        None => match config_file {
+            Some(f) => {
+                let method_name = f["props"]["default_method"]
+                    .as_str()
+                    .expect(mess.error_file_parse);
+                let method = Methods::try_from(method_name).expect(mess.error_file_prop);
+                method.to_method()
+            }
+            None => {
+                let choice = Select::new(mess.ask_menu_method, Methods::get_methods()).prompt();
+                let method = Methods::from_str(choice.unwrap()).expect(mess.error_unknown_method);
+                method.to_method()
+            }
+        },
+    };
+    password_builder = password_builder.method_ptr(method).unwrap();
     // Get the generated password and then show to the user.
     let result: String = password_builder.build();
 
@@ -98,8 +112,11 @@ fn load_file(mess: Messages) -> Option<Value> {
     let file_path = home;
     let file = match File::open(&file_path).ok() {
         Some(file) => Some(file),
-        None => match input(mess.ask_create_file) {
-            Ok(choice) if ["y", "Y", "s", "S"].contains(&choice.as_str()) => {
+        None => match Confirm::new(mess.ask_create_file)
+            .with_default(false)
+            .prompt()
+        {
+            Ok(true) => {
                 let mut file = File::create(&file_path).expect("Could not create file!");
                 file.write_all(b"[props]\ndefault_method = 'Base64'\nlang = 'EnUs'")
                     .expect("Could not write to file!");
@@ -115,30 +132,4 @@ fn load_file(mess: Messages) -> Option<Value> {
         s.parse::<Value>()
             .expect("Erro ao ler o arquivo no formato TOML."),
     )
-}
-
-fn use_config_file(
-    mess: &Messages,
-    password_builder: PasswordBuilder<Unique, Variable>,
-    arq: Value,
-) -> Result<PasswordBuilder<Unique, Variable>> {
-    let def_met = arq["props"]["default_method"]
-        .as_str()
-        .unwrap_or_else(|| panic!("Error: {}", mess.error_file_prop));
-
-    let method = zpb::Methods::get_method(def_met)
-        .unwrap_or_else(|_| panic!("Erro: \"{def_met}\" {}", mess.error_unknown_method));
-    Ok(password_builder.method_ptr(method)?)
-}
-
-fn input(message: impl Into<String>) -> Result<String> {
-    use std::io::Write;
-    print!("{}", message.into());
-
-    io::stdout().flush()?;
-
-    let mut buffer: String = String::new();
-    io::stdin().read_line(&mut buffer)?;
-
-    Ok(buffer.trim().to_string())
 }
