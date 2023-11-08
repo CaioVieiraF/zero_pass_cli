@@ -8,14 +8,20 @@ use clap::Parser;
 use copypasta::{ClipboardContext, ClipboardProvider};
 use inquire::{Password, Select, Text};
 use languages::Messages;
-use zero_pass_backend::{self as zpb, encrypt::PasswordBuilder};
-use zpb::Methods;
+use zero_pass_backend::{encrypt::PasswordBuilder, Methods};
 
 #[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, long_about = None)]
+/// Cli client for the zero pass project.
+///
+/// This is the most basic implementation of the
+/// library, it is mostly aimed to be a example of
+/// what you can do with it.
 struct Args {
     /// The unique password used on all cases
-    #[arg(short, long)]
+    ///
+    /// Read the docs to learn more about the core concepts.
+    #[arg(short, long, long_help = None)]
     unique: Option<String>,
     /// The password that changes for each different service
     #[arg(short, long)]
@@ -34,7 +40,7 @@ struct Args {
 
 fn main() {
     // Instantiate the messages helper that sets the language.
-    let mess = Messages::new();
+    let mess = Messages::default();
 
     // Get the command arguments from the environment.
     let cli_args = Args::parse();
