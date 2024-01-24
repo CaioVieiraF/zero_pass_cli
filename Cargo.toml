@@ -14,3 +14,7 @@ thiserror = "1.0.50"
 clap = { version = "4.4.7", features = ["derive"] }
 inquire = "0.6.2"
 copypasta = "0.10.0"
+
+[[bin]]
+name = "zr0"
+path = "src/main.rs"
