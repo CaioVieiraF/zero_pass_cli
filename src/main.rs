@@ -46,22 +46,17 @@ fn main() {
     let cli_args = Args::parse();
 
     // Get the unique pass either from command line, if specified, or from user input.
-    let unique = match cli_args.unique {
-        Some(u) => u,
-        None => Password::new(mess.ask_unique_pass).prompt().expect(""),
-    };
-
+    let unique = cli_args
+        .unique
+        .unwrap_or_else(|| Password::new(mess.ask_unique_pass).prompt().expect(""));
     // Get the variable pass either from command line, if specified, or from user input.
-    let variable = match cli_args.variable {
-        Some(v) => v,
-        None => Text::new(mess.ask_variable_pass).prompt().expect(""),
-    };
+    let variable = cli_args
+        .variable
+        .unwrap_or_else(|| Text::new(mess.ask_variable_pass).prompt().expect(""));
 
     // Start building the password with the PasswordBuilder. This must initialize with unique and
     // variable to use the other methods.
-    let mut password_builder = PasswordBuilder::new()
-        .unique(unique)
-        .variable(variable.as_str());
+    let mut password_builder = PasswordBuilder::new().unique(unique).variable(variable);
 
     password_builder = password_builder.repeat(cli_args.repeat);
 
@@ -69,8 +64,11 @@ fn main() {
     let method = match cli_args.method {
         Some(m) => m.to_method(),
         None => {
-            let choice = Select::new(mess.ask_menu_method, Methods::get_methods()).prompt();
-            let method = Methods::from_str(choice.unwrap()).expect(mess.error_unknown_method);
+            // An error with the select menu is not expected to fail, so we unwrap it here.
+            let choice = Select::new(mess.ask_menu_method, Methods::get_methods())
+                .prompt()
+                .unwrap();
+            let method = Methods::from_str(choice).expect(mess.error_unknown_method);
             method.to_method()
         }
     };
