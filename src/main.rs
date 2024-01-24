@@ -8,6 +8,7 @@ use clap::Parser;
 use copypasta::{ClipboardContext, ClipboardProvider};
 use inquire::{Password, Select, Text};
 use languages::Messages;
+use rand::{seq::SliceRandom, thread_rng};
 use zero_pass_backend::{encrypt::PasswordBuilder, Methods};
 
 #[derive(Debug, Parser)]
@@ -64,8 +65,10 @@ fn main() {
     let method = match cli_args.method {
         Some(m) => m.to_method(),
         None => {
+            let mut random_method_list = Methods::get_methods();
+            random_method_list.shuffle(&mut thread_rng());
             // An error with the select menu is not expected to fail, so we unwrap it here.
-            let choice = Select::new(mess.ask_menu_method, Methods::get_methods())
+            let choice = Select::new(mess.ask_menu_method, random_method_list)
                 .prompt()
                 .unwrap();
             let method = Methods::from_str(choice).expect(mess.error_unknown_method);
