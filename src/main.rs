@@ -39,7 +39,8 @@ struct Args {
     show_result: bool,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Instantiate the messages helper that sets the language.
     let mess = Messages::default();
 
@@ -75,7 +76,7 @@ fn main() {
             method.to_method()
         }
     };
-    password_builder = password_builder.method_ptr(method).unwrap();
+    password_builder = password_builder.method_ptr(method).await.unwrap();
     // Get the generated password and then show to the user.
     let result: String = password_builder.build();
 

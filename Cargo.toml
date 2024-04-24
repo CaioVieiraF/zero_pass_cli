@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zero_pass_backend = "0.2.6"
+zero_pass_backend = "0.3.2"
 toml = "0.5.8"
 dirs = "4.0.0"
 thiserror = "1.0.50"
@@ -15,6 +15,7 @@ clap = { version = "4.4.7", features = ["derive"] }
 inquire = "0.6.2"
 copypasta = "0.10.0"
 rand = "0.8.5"
+tokio = { version = "1.37.0", features = ["full"] }
 
 [[bin]]
 name = "zr0"
